@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.deviceownerapp"> <!-- This is your app's unique ID -->
+
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+         tools:ignore="QueryAllPackagesPermission" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.DeviceOwnerApp">
+
+        <!-- 1. The Main Activity (App Launcher Entry) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 2. The App Detail Activity (Hide/Permissions) -->
+        <activity
+            android:name=".AppDetailActivity"
+            android:exported="false" /> <!-- Not exported, only our app can launch it -->
+
+        <!-- 3. The Invisible Install Activity -->
+        <activity
+            android:name=".InstallActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:exported="true"
+            android:taskAffinity=""
+            android:excludeFromRecents="true">
+            
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <!-- This is the MIME type for APK files -->
+                <data android:mimeType="application/vnd.android.package-archive" />
+                <!-- Add ZIP and generic binary file types for XAPK -->
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/octet-stream" />
+                <!-- Handle "content://" and "file://" schemes -->
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+            </intent-filter>
+        </activity>
+
+        <!-- 4. The Device Admin Receiver (The Core) -->
+        <receiver
+            android:name=".DeviceAdmin"
+            android:description="@string/admin_description"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_policies" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 5. The Receiver for Install Results -->
+        <receiver
+            android:name=".InstallResultReceiver"
+            android:exported="false" />
+
+    </application>
+
+</manifest>
