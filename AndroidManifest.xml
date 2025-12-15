@@ -34,7 +34,7 @@
         <!-- 3. The Invisible Install Activity -->
         <activity
             android:name=".InstallActivity"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:theme="@android:style/Theme.DeviceDefault.Light.Dialog"
             android:exported="true"
             android:taskAffinity=""
             android:excludeFromRecents="true">
@@ -70,6 +70,12 @@
         <!-- 5. The Receiver for Install Results -->
         <receiver
             android:name=".InstallResultReceiver"
+            android:exported="false" />
+
+        <!-- 6. Result Display Activity -->
+        <activity
+            android:name=".ResultActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:exported="false" />
 
     </application>

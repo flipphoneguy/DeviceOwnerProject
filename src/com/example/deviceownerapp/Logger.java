@@ -55,4 +55,12 @@ public class Logger {
             Log.e(TAG, "Critical: Failed to write to log file", e);
         }
     }
+
+    public static String getLogFilePath(Context context) {
+        File logDir = context.getExternalFilesDir(null);
+        if (logDir != null) {
+            return new File(logDir, LOG_FILE_NAME).getAbsolutePath();
+        }
+        return "Unknown";
+    }
 }

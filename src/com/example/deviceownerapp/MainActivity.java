@@ -27,9 +27,11 @@ import java.util.List;
 public class MainActivity extends Activity {
 
     private static final String TAG = "MainActivity";
+    private static final int PICK_FILE_REQUEST_CODE = 1001;
 
     private ListView appListView;
     private Button uninstallButton;
+    private Button installButton;
     private DevicePolicyManager dpm;
     private PackageManager pm;
     private ComponentName adminComponent;
@@ -50,6 +52,7 @@ public class MainActivity extends Activity {
         appList = new ArrayList<>();
         appListView = findViewById(R.id.app_list);
         uninstallButton = findViewById(R.id.uninstall_button);
+        installButton = findViewById(R.id.install_button);
         
         appAdapter = new AppAdapter();
         appListView.setAdapter(appAdapter);
@@ -72,6 +75,42 @@ public class MainActivity extends Activity {
                 removeAdminAndUninstall();
             }
         });
+
+        // Set click listener for the Install button
+        installButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openFilePicker();
+            }
+        });
+    }
+
+    private void openFilePicker() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("*/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        String[] mimeTypes = {"application/vnd.android.package-archive", "application/zip", "application/octet-stream"};
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+        try {
+            startActivityForResult(Intent.createChooser(intent, "Select APK or XAPK"), PICK_FILE_REQUEST_CODE);
+        } catch (Exception e) {
+            Toast.makeText(this, "No file picker found", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == PICK_FILE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            Uri uri = data.getData();
+            if (uri != null) {
+                Intent installIntent = new Intent(this, InstallActivity.class);
+                installIntent.setAction(Intent.ACTION_VIEW);
+                installIntent.setData(uri);
+                installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(installIntent);
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
