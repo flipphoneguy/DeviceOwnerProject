@@ -32,9 +32,34 @@ public class InstallResultReceiver extends BroadcastReceiver {
                 Toast.makeText(context, "Install Success!", Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "Install Success");
                 break;
+            case PackageInstaller.STATUS_PENDING_USER_ACTION:
+                // This asks for user confirmation to install.
+                // Since we are Device Owner, this shouldn't happen usually, but if it does, launch the intent.
+                Intent confirmIntent = intent.getParcelableExtra(Intent.EXTRA_INTENT);
+                if (confirmIntent != null) {
+                    confirmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(confirmIntent);
+                }
+                break;
             default:
-                String error = "Install Failed: " + status + ", " + message;
-                Toast.makeText(context, error, Toast.LENGTH_LONG).show();
+                String error = "Install Failed: " + status + " (" + message + ")";
+                // Show as dialog if possible, but Receiver context is limited.
+                // To show a Dialog, we need an Activity context.
+                // We can start an activity to show the error.
+                Intent errorIntent = new Intent(context, ProgressActivity.class); // Re-use ProgressActivity just to hold the dialog? Or new ErrorActivity?
+                // Actually ErrorHandler uses AlertDialog which needs Activity.
+                // Let's create a specialized intent to launch an activity that shows the error.
+                // Or simply log it and toast it, but user asked for "Pop up where user has to click OK".
+
+                // We can launch MainActivity with an error extra, or a transient transparent activity.
+                // Let's use a new intent to ProgressActivity (or similar) that shows the error dialog then finishes.
+
+                // Let's modify ProgressActivity to handle "SHOW_ERROR"
+                Intent errIntent = new Intent(context, ProgressActivity.class);
+                errIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                errIntent.putExtra("ERROR_MESSAGE", error);
+                context.startActivity(errIntent);
+
                 // Log the failure message
                 Logger.log(context, TAG, error);
                 break;
