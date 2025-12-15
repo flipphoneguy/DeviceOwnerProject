@@ -5,6 +5,8 @@
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
          tools:ignore="QueryAllPackagesPermission" />
 
@@ -41,6 +43,7 @@
             
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <!-- This is the MIME type for APK files -->
                 <data android:mimeType="application/vnd.android.package-archive" />
@@ -71,6 +74,13 @@
         <receiver
             android:name=".InstallResultReceiver"
             android:exported="false" />
+
+        <!-- 6. Progress Activity -->
+        <activity
+            android:name=".ProgressActivity"
+            android:theme="@android:style/Theme.DeviceDefault.Dialog"
+            android:exported="false"
+            android:label="Installing..." />
 
     </application>
 
