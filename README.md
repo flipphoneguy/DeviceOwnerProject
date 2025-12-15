@@ -16,17 +16,21 @@ These devices often restrict app installation, allowing only ADB or Device Owner
 ## Usage
 
 1.  **Installation**:
-    *   Install this app via ADB for the first time: `adb install -r app-signed.apk`
+    *   Install this app via ADB for the first time: `adb install -t -r app-signed.apk`
+    *   **Important**: Remove the SIM card from the device before setting the device owner. Sonim devices treat the SIM as an account and may block the command if present.
     *   Set it as Device Owner:
         ```bash
         adb shell dpm set-device-owner com.example.deviceownerapp/.DeviceAdmin
         ```
 
-2.  **Installing Apps**:
+2.  **Troubleshooting**:
+    *   If you have existing accounts (Google, etc.) that prevent setting Device Owner, use `adb shell dumpsys account` to list them and remove them from Settings > Accounts.
+
+3.  **Installing Apps**:
     *   **Option A**: Open "Device Owner App" and click "Install File" to pick an APK/XAPK.
     *   **Option B**: Use a file manager to open an APK/XAPK and select "Device Owner App" as the handler.
 
-3.  **Uninstallation**:
+4.  **Uninstallation**:
     *   Open the app and click "Uninstall App". This will remove the Device Owner status and then uninstall the app itself.
 
 ## Releases

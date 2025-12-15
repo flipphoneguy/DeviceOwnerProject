@@ -13,13 +13,14 @@ import android.content.DialogInterface;
 /**
  * Activity to show a progress spinner while installing.
  * It stays open until it receives a broadcast to close or finish.
- * Also handles showing errors from InstallResultReceiver.
+ * Also handles showing errors and success messages from InstallResultReceiver.
  */
 public class ProgressActivity extends Activity {
 
     public static final String ACTION_FINISH = "com.example.deviceownerapp.ACTION_FINISH_PROGRESS";
     public static final String EXTRA_MESSAGE = "message";
     public static final String EXTRA_ERROR = "ERROR_MESSAGE";
+    public static final String EXTRA_SUCCESS = "SUCCESS_MESSAGE";
 
     private BroadcastReceiver finishReceiver = new BroadcastReceiver() {
         @Override
@@ -32,8 +33,29 @@ public class ProgressActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Handle Success
+        if (getIntent().hasExtra(EXTRA_SUCCESS)) {
+            String msg = getIntent().getStringExtra(EXTRA_SUCCESS);
+            new AlertDialog.Builder(this)
+                .setTitle("Success")
+                .setMessage(msg)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        finish();
+                    }
+                })
+                .setCancelable(false)
+                .show();
+            // Close any existing "Processing" instances?
+            // Sending broadcast here might kill *this* activity if we registered receiver,
+            // but we register receiver after this block.
+            sendBroadcast(new Intent(ACTION_FINISH));
+            return;
+        }
+
+        // Handle Error
         if (getIntent().hasExtra(EXTRA_ERROR)) {
-            // Show error dialog and finish when dismissed
             String errorMsg = getIntent().getStringExtra(EXTRA_ERROR);
             new AlertDialog.Builder(this)
                 .setTitle("Installation Error")
@@ -46,7 +68,8 @@ public class ProgressActivity extends Activity {
                 })
                 .setCancelable(false)
                 .show();
-            return; // Don't set content view
+            sendBroadcast(new Intent(ACTION_FINISH));
+            return;
         }
 
         setContentView(R.layout.activity_progress);
@@ -65,15 +88,13 @@ public class ProgressActivity extends Activity {
         try {
             unregisterReceiver(finishReceiver);
         } catch (IllegalArgumentException e) {
-            // Not registered
         }
     }
 
     @Override
     public void onBackPressed() {
-        // Prevent back press to ensure user waits if installing
-        if (!getIntent().hasExtra(EXTRA_ERROR)) {
-             // maybe warn?
+        if (!getIntent().hasExtra(EXTRA_ERROR) && !getIntent().hasExtra(EXTRA_SUCCESS)) {
+             // Block back press during progress
         } else {
             super.onBackPressed();
         }
