@@ -7,16 +7,18 @@ These devices often restrict app installation, allowing only ADB or Device Owner
 ## Features
 
 *   **Install APKs**: Directly install standard `.apk` files.
-*   **Install XAPKs**: Supports installing `.xapk` (and `.zip`) bundles containing Split APKs.
+*   **Install XAPKs**: Supports installing `.xapk` (and `.zip`) bundles containing Split APKs. Uses robust `ZipFile` processing to handle various compression types.
 *   **Progress UI**: Visual feedback during installation preventing "App Not Responding" errors on large files.
 *   **Error Logging**: Detailed error logs are saved to `Android/data/com.example.deviceownerapp/files/app_errors.log`.
-*   **File Picker**: Integrated file picker to select APK/XAPK files from storage.
+*   **Permissions Management**: Allows granting or denying runtime permissions for installed apps.
 *   **Admin Management**: Easy uninstallation and admin removal via the main interface.
+*   **Self-Update**: Built-in feature to check for updates and self-install them while retaining Device Owner status.
 
 ## Usage
 
 1.  **Installation**:
-    *   Install this app via ADB for the first time: `adb install -t -r app-signed.apk`
+    *   [Download Latest Release](https://github.com/frumware/DeviceOwnerApp/releases/latest/download/DeviceOwnerApp.apk)
+    *   Install this app via ADB for the first time: `adb install -t -r DeviceOwnerApp.apk`
     *   **Important**: Remove the SIM card from the device before setting the device owner. Sonim devices treat the SIM as an account and may block the command if present.
     *   Set it as Device Owner:
         ```bash
@@ -35,7 +37,7 @@ These devices often restrict app installation, allowing only ADB or Device Owner
 
 ## Releases
 
-*   [Latest Release](#) (Placeholder)
+*   [GitHub Releases](https://github.com/frumware/DeviceOwnerApp/releases/latest)
 
 ## Build
 

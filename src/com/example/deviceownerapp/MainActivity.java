@@ -8,17 +8,30 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.util.Base64;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,6 +41,7 @@ public class MainActivity extends Activity {
 
     private static final String TAG = "MainActivity";
     private static final int REQUEST_PICK_FILE = 1001;
+    private static final String UPDATE_URL = "https://github.com/frumware/DeviceOwnerApp/releases/latest/download/DeviceOwnerApp.apk";
 
     private ListView appListView;
     private Button uninstallButton;
@@ -89,6 +103,141 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         loadApplications();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_update) {
+            checkForUpdates();
+            return true;
+        } else if (id == R.id.action_contact) {
+            showContactDialog();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void checkForUpdates() {
+        Toast.makeText(this, "Checking for updates...", Toast.LENGTH_SHORT).show();
+        new DownloadUpdateTask().execute(UPDATE_URL);
+    }
+
+    private class DownloadUpdateTask extends AsyncTask<String, Void, File> {
+        @Override
+        protected File doInBackground(String... params) {
+            try {
+                URL url = new URL(params[0]);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                // connection.setDoOutput(true); // Removed as it forces POST on some implementations
+                connection.connect();
+
+                File file = new File(getExternalCacheDir(), "update.apk");
+                FileOutputStream fileOutput = new FileOutputStream(file);
+                InputStream inputStream = connection.getInputStream();
+
+                byte[] buffer = new byte[1024];
+                int bufferLength;
+
+                while ((bufferLength = inputStream.read(buffer)) > 0) {
+                    fileOutput.write(buffer, 0, bufferLength);
+                }
+                fileOutput.close();
+                return file;
+            } catch (Exception e) {
+                Logger.log(MainActivity.this, TAG, "Update download failed: " + e.getMessage());
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(File result) {
+            if (result != null) {
+                Toast.makeText(MainActivity.this, "Update downloaded. Installing...", Toast.LENGTH_LONG).show();
+                installUpdate(result);
+            } else {
+                Toast.makeText(MainActivity.this, "Update failed. Check log.", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void installUpdate(File file) {
+        Intent intent = new Intent(this, InstallActivity.class);
+        intent.setAction(Intent.ACTION_VIEW);
+        // Use SimpleFileProvider to avoid FileUriExposedException on Android 7+
+        Uri uri = Uri.parse("content://" + getPackageName() + ".fileprovider/" + file.getName());
+        intent.setData(uri);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivity(intent);
+    }
+
+    private void showContactDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Contact Us");
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 32, 32, 32);
+
+        final EditText nameInput = new EditText(this);
+        nameInput.setHint("Name");
+        layout.addView(nameInput);
+
+        final EditText emailInput = new EditText(this);
+        emailInput.setHint("Email");
+        layout.addView(emailInput);
+
+        final EditText messageInput = new EditText(this);
+        messageInput.setHint("Message");
+        messageInput.setMinLines(3);
+        layout.addView(messageInput);
+
+        builder.setView(layout);
+
+        builder.setPositiveButton("Send", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String name = nameInput.getText().toString();
+                String email = emailInput.getText().toString();
+                String message = messageInput.getText().toString();
+
+                if (name.isEmpty() || email.isEmpty() || message.isEmpty()) {
+                    Toast.makeText(MainActivity.this, "All fields are required.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                sendEmail(name, email, message);
+            }
+        });
+
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+
+    private void sendEmail(String name, String email, String message) {
+        Intent intent = new Intent(Intent.ACTION_SENDTO);
+        intent.setData(Uri.parse("mailto:")); // only email apps should handle this
+        // Simple obfuscation to prevent plain text email in source
+        // Base64 for frumware1@gmail.com (actually lowercase 'g' usually but following prompt)
+        // Wait, prompt said "frumware1@Gmail.com". Base64 for "frumware1@Gmail.com": ZnJ1bXdhcmUxQEdtYWlsLmNvbQ==
+        String targetEmail = new String(Base64.decode("ZnJ1bXdhcmUxQEdtYWlsLmNvbQ==", Base64.DEFAULT));
+
+        intent.putExtra(Intent.EXTRA_EMAIL, new String[]{targetEmail});
+        intent.putExtra(Intent.EXTRA_SUBJECT, "Contact from Device Owner App: " + name);
+        intent.putExtra(Intent.EXTRA_TEXT, "Name: " + name + "\nEmail: " + email + "\n\nMessage:\n" + message);
+
+        try {
+            startActivity(intent);
+        } catch (android.content.ActivityNotFoundException ex) {
+            Toast.makeText(MainActivity.this, "No email client installed.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void openFilePicker() {

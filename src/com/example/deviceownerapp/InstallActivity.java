@@ -116,7 +116,9 @@ public class InstallActivity extends Activity {
         private String installXapk(Uri uri) {
             ZipFile zipFile = null;
             try {
-                // Copy URI to temp file to support ZipFile (random access)
+                // Copy URI to temp file to support ZipFile (random access).
+                // This approach avoids the "only DEFLATED entries can have EXT descriptor" error
+                // common with ZipInputStream on Android when handling certain XAPK/ZIP files.
                 tempFile = File.createTempFile("install", ".xapk", getCacheDir());
                 try (InputStream in = getContentResolver().openInputStream(uri);
                      FileOutputStream out = new FileOutputStream(tempFile)) {
