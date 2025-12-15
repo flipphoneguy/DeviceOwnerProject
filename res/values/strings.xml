@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">DeviceOwnerApp</string>
+    <string name="admin_description">Device Owner for app management</string>
+    <string name="app_list_title">Installed Applications</string>
+    <string name="hide_application">Hide Application</string>
+    <string name="permissions">Permissions:</string>
+</resources>
