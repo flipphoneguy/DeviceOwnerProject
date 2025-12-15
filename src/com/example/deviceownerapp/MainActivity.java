@@ -27,9 +27,11 @@ import java.util.List;
 public class MainActivity extends Activity {
 
     private static final String TAG = "MainActivity";
+    private static final int REQUEST_PICK_FILE = 1001;
 
     private ListView appListView;
     private Button uninstallButton;
+    private Button installFileButton;
     private DevicePolicyManager dpm;
     private PackageManager pm;
     private ComponentName adminComponent;
@@ -50,6 +52,7 @@ public class MainActivity extends Activity {
         appList = new ArrayList<>();
         appListView = findViewById(R.id.app_list);
         uninstallButton = findViewById(R.id.uninstall_button);
+        installFileButton = findViewById(R.id.install_file_button);
         
         appAdapter = new AppAdapter();
         appListView.setAdapter(appAdapter);
@@ -72,6 +75,14 @@ public class MainActivity extends Activity {
                 removeAdminAndUninstall();
             }
         });
+
+        // Set click listener for the Install File button
+        installFileButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openFilePicker();
+            }
+        });
     }
 
     @Override
@@ -80,12 +91,45 @@ public class MainActivity extends Activity {
         loadApplications();
     }
 
+    private void openFilePicker() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*"); // Allow user to pick any file, we validate later
+        // Optionally suggest mime types if API 19+
+        String[] mimeTypes = {"application/vnd.android.package-archive", "application/zip", "application/octet-stream"};
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+
+        try {
+            startActivityForResult(intent, REQUEST_PICK_FILE);
+        } catch (Exception e) {
+            ErrorHandler.showError(this, "Could not open file picker: " + e.getMessage());
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_PICK_FILE && resultCode == Activity.RESULT_OK) {
+            if (data != null && data.getData() != null) {
+                Uri uri = data.getData();
+                // Launch InstallActivity to handle the installation
+                Intent installIntent = new Intent(this, InstallActivity.class);
+                installIntent.setAction(Intent.ACTION_VIEW);
+                installIntent.setData(uri);
+                // Grant read permission to the target activity
+                installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(installIntent);
+            }
+        }
+    }
+
     private void removeAdminAndUninstall() {
         try {
             // 1. Check if we are Device Owner and clear it
             if (dpm.isDeviceOwnerApp(getPackageName())) {
                 Toast.makeText(this, "Clearing Device Owner status...", Toast.LENGTH_SHORT).show();
                 // This method removes the DO status, making us a normal app again
+                @SuppressWarnings("deprecation")
+                boolean ignored = false; // dummy
                 dpm.clearDeviceOwnerApp(getPackageName());
             }
 
@@ -102,7 +146,7 @@ public class MainActivity extends Activity {
 
         } catch (Exception e) {
             Logger.log(this, TAG, "Error removing admin: " + e.getMessage());
-            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            ErrorHandler.showError(this, "Error removing admin: " + e.getMessage());
         }
     }
 
