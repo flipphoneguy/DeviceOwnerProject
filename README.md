@@ -37,13 +37,12 @@ These devices often restrict app installation, allowing only ADB or Device Owner
     *   **Option A**: Open "Device Owner App" and click "Install File" to pick an APK/XAPK.
     *   **Option B**: Use a file manager to open an APK/XAPK and select "Device Owner App" as the handler.
 
-4.  **Managing Permissions**:
-    *   Click on any app in the list to view its details.
-    *   Use the switches to Grant or Deny specific runtime permissions.
-    *   You can also "Hide" an app, but **WARNING**: On Sonim devices, hiding an app may cause it to disappear permanently from the launcher menu even if unhidden later.
-
-5.  **Uninstallation**:
+4.  **Uninstallation**:
     *   Open the app and click "Uninstall App". This will remove the Device Owner status and then uninstall the app itself.
+
+## Releases
+
+*   [Latest Release](#) (Placeholder)
 
 ## Build
 
