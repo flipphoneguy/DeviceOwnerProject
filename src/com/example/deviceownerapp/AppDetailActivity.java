@@ -83,7 +83,7 @@ public class AppDetailActivity extends Activity {
                     // Show warning before hiding
                     new AlertDialog.Builder(AppDetailActivity.this)
                         .setTitle("Warning")
-                        .setMessage("Hiding this app may cause it to disappear from the applications menu indefinitely, even if unhidden later, due to Sonim launcher behavior. Are you sure?")
+                        .setMessage("Hiding this app will cause the applications menu to not show any user installed apps at all.")
                         .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {

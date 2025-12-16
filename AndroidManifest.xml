@@ -88,6 +88,7 @@
             android:name=".ProgressActivity"
             android:theme="@android:style/Theme.DeviceDefault.Dialog"
             android:exported="false"
+            android:launchMode="singleTop"
             android:label="Installing..." />
 
     </application>

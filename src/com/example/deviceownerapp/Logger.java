@@ -3,11 +3,16 @@ package com.example.deviceownerapp;
 import android.content.Context;
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -19,6 +24,8 @@ public class Logger {
 
     private static final String LOG_FILE_NAME = "app_errors.log";
     private static final String TAG = "AppLogger";
+    private static final String SEPARATOR = "----------------------------------------";
+    private static final int MAX_LOG_ENTRIES = 10;
 
     /**
      * Writes a log message to both logcat (e) and a file.
@@ -37,17 +44,53 @@ public class Logger {
                 Log.e(TAG, "Cannot get external files dir to log.");
                 return;
             }
+            if (!logDir.exists()) {
+                logDir.mkdirs();
+            }
 
             File logFile = new File(logDir, LOG_FILE_NAME);
 
-            // Get current timestamp
-            String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date());
-            String logEntry = String.format("%s [%s]: %s\n", timestamp, tag, message);
+            // Read existing logs
+            List<String> logEntries = new ArrayList<>();
+            if (logFile.exists()) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(logFile)))) {
+                    StringBuilder currentEntry = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (line.equals(SEPARATOR)) {
+                            if (currentEntry.length() > 0) {
+                                logEntries.add(currentEntry.toString().trim());
+                                currentEntry.setLength(0);
+                            }
+                        } else {
+                            currentEntry.append(line).append("\n");
+                        }
+                    }
+                    if (currentEntry.length() > 0) {
+                        logEntries.add(currentEntry.toString().trim());
+                    }
+                }
+            }
 
-            // Write to the file in "append" mode using try-with-resources
-            try (FileOutputStream fos = new FileOutputStream(logFile, true);
+            // Create new entry
+            String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date());
+            String newEntry = String.format("%s [%s]: %s", timestamp, tag, message);
+            logEntries.add(newEntry);
+
+            // Prune old entries
+            while (logEntries.size() > MAX_LOG_ENTRIES) {
+                logEntries.remove(0);
+            }
+
+            // Write back to file
+            try (FileOutputStream fos = new FileOutputStream(logFile, false); // false to overwrite
                  OutputStreamWriter writer = new OutputStreamWriter(fos)) {
-                writer.append(logEntry);
+                for (String entry : logEntries) {
+                    writer.write(entry);
+                    writer.write("\n");
+                    writer.write(SEPARATOR);
+                    writer.write("\n\n");
+                }
             }
 
         } catch (Exception e) {

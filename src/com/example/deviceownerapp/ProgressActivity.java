@@ -32,54 +32,56 @@ public class ProgressActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_progress);
 
+        registerReceiver(finishReceiver, new IntentFilter(ACTION_FINISH));
+
+        handleIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIntent(intent);
+    }
+
+    private void handleIntent(Intent intent) {
         // Handle Success
-        if (getIntent().hasExtra(EXTRA_SUCCESS)) {
-            String msg = getIntent().getStringExtra(EXTRA_SUCCESS);
-            new AlertDialog.Builder(this)
-                .setTitle("Success")
-                .setMessage(msg)
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                        finish();
-                    }
-                })
-                .setCancelable(false)
-                .show();
-            // Close any existing "Processing" instances?
-            // Sending broadcast here might kill *this* activity if we registered receiver,
-            // but we register receiver after this block.
-            sendBroadcast(new Intent(ACTION_FINISH));
+        if (intent.hasExtra(EXTRA_SUCCESS)) {
+            String msg = intent.getStringExtra(EXTRA_SUCCESS);
+            showDialog("Success", msg);
             return;
         }
 
         // Handle Error
-        if (getIntent().hasExtra(EXTRA_ERROR)) {
-            String errorMsg = getIntent().getStringExtra(EXTRA_ERROR);
-            new AlertDialog.Builder(this)
-                .setTitle("Installation Error")
-                .setMessage(errorMsg + "\n\nLog file: " + Logger.getLogFilePath(this))
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                        finish();
-                    }
-                })
-                .setCancelable(false)
-                .show();
-            sendBroadcast(new Intent(ACTION_FINISH));
+        if (intent.hasExtra(EXTRA_ERROR)) {
+            String errorMsg = intent.getStringExtra(EXTRA_ERROR);
+            showDialog("Installation Error", errorMsg + "\n\nLog file: " + Logger.getLogFilePath(this));
             return;
         }
 
-        setContentView(R.layout.activity_progress);
-
-        TextView textView = findViewById(R.id.progress_text);
-        if (getIntent().hasExtra(EXTRA_MESSAGE)) {
-            textView.setText(getIntent().getStringExtra(EXTRA_MESSAGE));
+        // Handle Message Update
+        if (intent.hasExtra(EXTRA_MESSAGE)) {
+            TextView textView = findViewById(R.id.progress_text);
+            if (textView != null) {
+                textView.setText(intent.getStringExtra(EXTRA_MESSAGE));
+            }
         }
+    }
 
-        registerReceiver(finishReceiver, new IntentFilter(ACTION_FINISH));
+    private void showDialog(String title, String message) {
+        new AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                    finish();
+                }
+            })
+            .setCancelable(false)
+            .show();
     }
 
     @Override
