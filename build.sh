@@ -20,7 +20,7 @@ echo "dexing..."
 d8 --lib "$PLATFORM_JAR"    --output "build/dex"    $(find build/classes -name "*.class")
 
 echo "zipping..."
-zip -u "build/app-unsigned.apk" "build/dex/classes.dex"
+zip -uj "build/app-unsigned.apk" "build/dex/classes.dex"
 
 echo "signing..."
 apksigner sign --ks "$HOME/.android/debug.keystore" --ks-pass "pass:android" --key-pass "pass:android" --out "build/DeviceAdminApp.apk" "build/app-unsigned.apk"
