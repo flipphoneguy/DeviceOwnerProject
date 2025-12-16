@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.example.deviceownerapp"> <!-- This is your app's unique ID -->
+    package="com.example.deviceownerapp"
+    android:versionCode="1"
+    android:versionName="1.0"> <!-- This is your app's unique ID -->
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />

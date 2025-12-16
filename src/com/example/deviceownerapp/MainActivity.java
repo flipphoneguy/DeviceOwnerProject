@@ -6,12 +6,11 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.util.Base64;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -27,9 +26,11 @@ import android.widget.Toast;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -41,11 +42,15 @@ public class MainActivity extends Activity {
 
     private static final String TAG = "MainActivity";
     private static final int REQUEST_PICK_FILE = 1001;
-    private static final String UPDATE_URL = "https://github.com/flipphoneguy/DeviceOwnerApp/releases/latest/download/DeviceOwnerApp.apk";
+    // Release API: https://api.github.com/repos/flipphoneguy/DeviceOwnerApp/releases/latest
+    // Asset URL (fallback): https://github.com/flipphoneguy/DeviceOwnerApp/releases/latest/download/DeviceOwnerApp.apk
+    private static final String UPDATE_API_URL = "https://api.github.com/repos/flipphoneguy/DeviceOwnerApp/releases/latest";
+    private static final String UPDATE_DOWNLOAD_URL = "https://github.com/flipphoneguy/DeviceOwnerApp/releases/latest/download/DeviceOwnerApp.apk";
 
     private ListView appListView;
     private Button uninstallButton;
     private Button installFileButton;
+    private Button optionsButton;
     private DevicePolicyManager dpm;
     private PackageManager pm;
     private ComponentName adminComponent;
@@ -67,6 +72,7 @@ public class MainActivity extends Activity {
         appListView = findViewById(R.id.app_list);
         uninstallButton = findViewById(R.id.uninstall_button);
         installFileButton = findViewById(R.id.install_file_button);
+        optionsButton = findViewById(R.id.options_button);
         
         appAdapter = new AppAdapter();
         appListView.setAdapter(appAdapter);
@@ -97,6 +103,16 @@ public class MainActivity extends Activity {
                 openFilePicker();
             }
         });
+
+        // Set click listener for the Options button
+        if (optionsButton != null) {
+            optionsButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    openOptionsMenu();
+                }
+            });
+        }
     }
 
     @Override
@@ -126,7 +142,95 @@ public class MainActivity extends Activity {
 
     private void checkForUpdates() {
         Toast.makeText(this, "Checking for updates...", Toast.LENGTH_SHORT).show();
-        new DownloadUpdateTask().execute(UPDATE_URL);
+        new CheckUpdateTask().execute(UPDATE_API_URL);
+    }
+
+    private class CheckUpdateTask extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... params) {
+            try {
+                URL url = new URL(params[0]);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setRequestProperty("User-Agent", "DeviceOwnerApp"); // GitHub requires User-Agent
+                connection.connect();
+
+                if (connection.getResponseCode() != 200) {
+                     return null;
+                }
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
+                }
+                reader.close();
+
+                // Manual simple JSON parsing to find "tag_name"
+                // JSON: { ... "tag_name": "v1.2", ... }
+                String json = sb.toString();
+                String key = "\"tag_name\"";
+                int index = json.indexOf(key);
+                if (index != -1) {
+                    int startQuote = json.indexOf("\"", index + key.length()); // skip key
+                    // The next quote should be start of value, but might be colon first
+                    // Actually, indexOf after key length might hit the colon or whitespace
+                    // Let's look for colon first
+                    int colon = json.indexOf(":", index + key.length());
+                    int valueStart = json.indexOf("\"", colon);
+                    int valueEnd = json.indexOf("\"", valueStart + 1);
+                    if (valueStart != -1 && valueEnd != -1) {
+                        return json.substring(valueStart + 1, valueEnd);
+                    }
+                }
+                return null;
+            } catch (Exception e) {
+                Logger.log(MainActivity.this, TAG, "Update check failed: " + e.getMessage());
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(String remoteVersion) {
+            if (remoteVersion != null) {
+                try {
+                    PackageInfo pInfo = pm.getPackageInfo(getPackageName(), 0);
+                    String currentVersion = pInfo.versionName;
+
+                    // Simple string comparison for versions (works if format is consistent like v1.0, v1.1)
+                    // If remote is different from current, assume update (or we could try to parse numbers)
+                    // Removing 'v' prefix if exists
+                    String cleanRemote = remoteVersion.replace("v", "");
+                    String cleanCurrent = currentVersion.replace("v", "");
+
+                    if (!cleanRemote.equals(cleanCurrent)) {
+                         // Found update
+                         showUpdateDialog(remoteVersion);
+                    } else {
+                        Toast.makeText(MainActivity.this, "You are up to date (Version " + currentVersion + ")", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "Error checking version.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(MainActivity.this, "Failed to check for updates.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void showUpdateDialog(String newVersion) {
+        new AlertDialog.Builder(this)
+            .setTitle("Update Available")
+            .setMessage("A new version (" + newVersion + ") is available. Download and install now?")
+            .setPositiveButton("Download", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    new DownloadUpdateTask().execute(UPDATE_DOWNLOAD_URL);
+                }
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
     }
 
     private class DownloadUpdateTask extends AsyncTask<String, Void, File> {
@@ -136,8 +240,12 @@ public class MainActivity extends Activity {
                 URL url = new URL(params[0]);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("GET");
-                // connection.setDoOutput(true); // Removed as it forces POST on some implementations
+                // Follow redirects (GitHub downloads often redirect)
+                connection.setInstanceFollowRedirects(true);
                 connection.connect();
+
+                // Handle redirect manually if needed, but HttpURLConnection usually handles it
+                // unless switching protocols (http->https) which shouldn't happen here.
 
                 File file = new File(getExternalCacheDir(), "update.apk");
                 FileOutputStream fileOutput = new FileOutputStream(file);
@@ -163,7 +271,7 @@ public class MainActivity extends Activity {
                 Toast.makeText(MainActivity.this, "Update downloaded. Installing...", Toast.LENGTH_LONG).show();
                 installUpdate(result);
             } else {
-                Toast.makeText(MainActivity.this, "Update failed. Check log.", Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "Update download failed. Check log.", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -180,63 +288,23 @@ public class MainActivity extends Activity {
 
     private void showContactDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Contact Us");
+        builder.setTitle("Report Issue / Contact");
+        builder.setMessage("To contact us or report bugs, please visit our GitHub issues page.");
 
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(32, 32, 32, 32);
-
-        final EditText nameInput = new EditText(this);
-        nameInput.setHint("Name");
-        layout.addView(nameInput);
-
-        final EditText emailInput = new EditText(this);
-        emailInput.setHint("Email");
-        layout.addView(emailInput);
-
-        final EditText messageInput = new EditText(this);
-        messageInput.setHint("Message");
-        messageInput.setMinLines(3);
-        layout.addView(messageInput);
-
-        builder.setView(layout);
-
-        builder.setPositiveButton("Send", new DialogInterface.OnClickListener() {
+        builder.setPositiveButton("Open GitHub", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                String name = nameInput.getText().toString();
-                String email = emailInput.getText().toString();
-                String message = messageInput.getText().toString();
-
-                if (name.isEmpty() || email.isEmpty() || message.isEmpty()) {
-                    Toast.makeText(MainActivity.this, "All fields are required.", Toast.LENGTH_SHORT).show();
-                    return;
+                try {
+                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/flipphoneguy/DeviceOwnerApp/issues"));
+                    startActivity(browserIntent);
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "Could not open browser.", Toast.LENGTH_SHORT).show();
                 }
-
-                sendEmail(name, email, message);
             }
         });
 
         builder.setNegativeButton("Cancel", null);
         builder.show();
-    }
-
-    private void sendEmail(String name, String email, String message) {
-        Intent intent = new Intent(Intent.ACTION_SENDTO);
-        intent.setData(Uri.parse("mailto:")); // only email apps should handle this
-        // Simple obfuscation to prevent plain text email in source
-        // Base64 for frumware1@gmail.com
-        String targetEmail = new String(Base64.decode("ZnJ1bXdhcmUxQGdtYWlsLmNvbQ==", Base64.DEFAULT));
-
-        intent.putExtra(Intent.EXTRA_EMAIL, new String[]{targetEmail});
-        intent.putExtra(Intent.EXTRA_SUBJECT, "Contact from Device Owner App: " + name);
-        intent.putExtra(Intent.EXTRA_TEXT, "Name: " + name + "\nEmail: " + email + "\n\nMessage:\n" + message);
-
-        try {
-            startActivity(intent);
-        } catch (android.content.ActivityNotFoundException ex) {
-            Toast.makeText(MainActivity.this, "No email client installed.", Toast.LENGTH_SHORT).show();
-        }
     }
 
     private void openFilePicker() {
