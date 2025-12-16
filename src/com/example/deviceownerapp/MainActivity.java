@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
 
     private static final String TAG = "MainActivity";
     private static final int REQUEST_PICK_FILE = 1001;
-    private static final String UPDATE_URL = "https://github.com/frumware/DeviceOwnerApp/releases/latest/download/DeviceOwnerApp.apk";
+    private static final String UPDATE_URL = "https://github.com/flipphoneguy/DeviceOwnerApp/releases/latest/download/DeviceOwnerApp.apk";
 
     private ListView appListView;
     private Button uninstallButton;
@@ -225,9 +225,8 @@ public class MainActivity extends Activity {
         Intent intent = new Intent(Intent.ACTION_SENDTO);
         intent.setData(Uri.parse("mailto:")); // only email apps should handle this
         // Simple obfuscation to prevent plain text email in source
-        // Base64 for frumware1@gmail.com (actually lowercase 'g' usually but following prompt)
-        // Wait, prompt said "frumware1@Gmail.com". Base64 for "frumware1@Gmail.com": ZnJ1bXdhcmUxQEdtYWlsLmNvbQ==
-        String targetEmail = new String(Base64.decode("ZnJ1bXdhcmUxQEdtYWlsLmNvbQ==", Base64.DEFAULT));
+        // Base64 for frumware1@gmail.com
+        String targetEmail = new String(Base64.decode("ZnJ1bXdhcmUxQGdtYWlsLmNvbQ==", Base64.DEFAULT));
 
         intent.putExtra(Intent.EXTRA_EMAIL, new String[]{targetEmail});
         intent.putExtra(Intent.EXTRA_SUBJECT, "Contact from Device Owner App: " + name);
@@ -271,6 +270,7 @@ public class MainActivity extends Activity {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private void removeAdminAndUninstall() {
         try {
             // 1. Check if we are Device Owner and clear it
