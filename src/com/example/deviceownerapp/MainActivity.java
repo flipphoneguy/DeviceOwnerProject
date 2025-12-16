@@ -288,23 +288,101 @@ public class MainActivity extends Activity {
 
     private void showContactDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Report Issue / Contact");
-        builder.setMessage("To contact us or report bugs, please visit our GitHub issues page.");
+        builder.setTitle("Contact Us");
 
-        builder.setPositiveButton("Open GitHub", new DialogInterface.OnClickListener() {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 32, 32, 32);
+
+        final EditText nameInput = new EditText(this);
+        nameInput.setHint("Name");
+        layout.addView(nameInput);
+
+        final EditText emailInput = new EditText(this);
+        emailInput.setHint("Email");
+        layout.addView(emailInput);
+
+        final EditText messageInput = new EditText(this);
+        messageInput.setHint("Message");
+        messageInput.setMinLines(3);
+        layout.addView(messageInput);
+
+        builder.setView(layout);
+
+        builder.setPositiveButton("Send", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                try {
-                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/flipphoneguy/DeviceOwnerApp/issues"));
-                    startActivity(browserIntent);
-                } catch (Exception e) {
-                    Toast.makeText(MainActivity.this, "Could not open browser.", Toast.LENGTH_SHORT).show();
+                String name = nameInput.getText().toString();
+                String email = emailInput.getText().toString();
+                String message = messageInput.getText().toString();
+
+                if (name.isEmpty() || email.isEmpty() || message.isEmpty()) {
+                    Toast.makeText(MainActivity.this, "All fields are required.", Toast.LENGTH_SHORT).show();
+                    return;
                 }
+
+                new SendFeedbackTask().execute(name, email, message);
             }
         });
 
         builder.setNegativeButton("Cancel", null);
         builder.show();
+    }
+
+    private class SendFeedbackTask extends AsyncTask<String, Void, Boolean> {
+        @Override
+        protected Boolean doInBackground(String... params) {
+            String name = params[0];
+            String email = params[1];
+            String message = params[2];
+            String jsonPayload = String.format("{\"name\": \"%s\", \"email\": \"%s\", \"message\": \"%s\"}",
+                    escapeJson(name), escapeJson(email), escapeJson(message));
+
+            try {
+                URL url = new URL("https://formspree.io/mnnwyprr");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Accept", "application/json");
+                conn.setDoOutput(true);
+
+                try (java.io.OutputStream os = conn.getOutputStream()) {
+                    byte[] input = jsonPayload.getBytes("utf-8");
+                    os.write(input, 0, input.length);
+                }
+
+                int code = conn.getResponseCode();
+                return code >= 200 && code < 300;
+
+            } catch (Exception e) {
+                Logger.log(MainActivity.this, TAG, "Feedback send failed: " + e.getMessage());
+                return false;
+            }
+        }
+
+        private String escapeJson(String s) {
+            if (s == null) return "";
+            return s.replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\b", "\\b")
+                    .replace("\f", "\\f")
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r")
+                    .replace("\t", "\\t");
+        }
+
+        @Override
+        protected void onPostExecute(Boolean success) {
+            if (success) {
+                new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("Success")
+                    .setMessage("Thanks for your feedback!")
+                    .setPositiveButton("OK", null)
+                    .show();
+            } else {
+                Toast.makeText(MainActivity.this, "Failed to send feedback. Check log.", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private void openFilePicker() {
