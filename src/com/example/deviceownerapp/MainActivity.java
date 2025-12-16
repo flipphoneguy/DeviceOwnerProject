@@ -42,10 +42,10 @@ public class MainActivity extends Activity {
 
     private static final String TAG = "MainActivity";
     private static final int REQUEST_PICK_FILE = 1001;
-    // Release API: https://api.github.com/repos/flipphoneguy/DeviceOwnerApp/releases/latest
-    // Asset URL (fallback): https://github.com/flipphoneguy/DeviceOwnerApp/releases/latest/download/DeviceOwnerApp.apk
-    private static final String UPDATE_API_URL = "https://api.github.com/repos/flipphoneguy/DeviceOwnerApp/releases/latest";
-    private static final String UPDATE_DOWNLOAD_URL = "https://github.com/flipphoneguy/DeviceOwnerApp/releases/latest/download/DeviceOwnerApp.apk";
+    // Release API: https://api.github.com/repos/flipphoneguy/DeviceOwnerProject/releases/latest
+    // Asset URL (fallback): https://github.com/flipphoneguy/DeviceOwnerProject/releases/latest/download/DeviceAdminApp.apk
+    private static final String UPDATE_API_URL = "https://api.github.com/repos/flipphoneguy/DeviceOwnerProject/releases/latest";
+    private static final String UPDATE_DOWNLOAD_URL = "https://github.com/flipphoneguy/DeviceOwnerProject/releases/latest/download/DeviceAdminApp.apk";
 
     private ListView appListView;
     private Button uninstallButton;
