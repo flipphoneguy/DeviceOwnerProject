@@ -65,13 +65,14 @@ public class AppDetailActivity extends Activity {
     }
 
     private void setupHideSwitch() {
-        try {
-            boolean isHidden = dpm.isApplicationHidden(adminComponent, packageName);
+        DpmHelper.Mode mode = DpmHelper.getActiveMode(this);
+        if (mode == DpmHelper.Mode.NONE) {
+            hideSwitch.setEnabled(false);
+        } else {
+            boolean isHidden = DpmHelper.isApplicationHidden(this, packageName);
             isProgrammaticChange = true;
             hideSwitch.setChecked(isHidden);
             isProgrammaticChange = false;
-        } catch (SecurityException e) {
-            hideSwitch.setEnabled(false);
         }
 
         hideSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -108,12 +109,12 @@ public class AppDetailActivity extends Activity {
     }
 
     private void setAppHidden(boolean hidden, CompoundButton buttonView) {
-        try {
-            dpm.setApplicationHidden(adminComponent, packageName, hidden);
+        boolean success = DpmHelper.setApplicationHidden(this, packageName, hidden);
+        if (success) {
             String status = hidden ? "hidden" : "unhidden";
             Toast.makeText(AppDetailActivity.this, "App " + status, Toast.LENGTH_SHORT).show();
-        } catch (SecurityException e) {
-            Logger.log(AppDetailActivity.this, TAG, "Failed to change hidden state: " + e.getMessage());
+        } else {
+            Logger.log(AppDetailActivity.this, TAG, "Failed to change hidden state");
             isProgrammaticChange = true;
             buttonView.setChecked(!hidden);
             isProgrammaticChange = false;
@@ -148,27 +149,31 @@ public class AppDetailActivity extends Activity {
                 permSwitch.setMinHeight(120);
 
                 if (isRuntime) {
-                    int grantState = dpm.getPermissionGrantState(adminComponent, packageName, permission);
-                    permSwitch.setChecked(grantState == DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED);
+                    DpmHelper.Mode mode = DpmHelper.getActiveMode(this);
+                    if (mode == DpmHelper.Mode.NONE) {
+                        permSwitch.setEnabled(false);
+                    } else {
+                        int grantState = DpmHelper.getPermissionGrantState(this, packageName, permission);
+                        permSwitch.setChecked(grantState == DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED);
 
-                    permSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                        @Override
-                        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                            try {
+                        permSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                            @Override
+                            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                                 int newState = isChecked ?
                                         DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED :
                                         DevicePolicyManager.PERMISSION_GRANT_STATE_DENIED;
 
-                                dpm.setPermissionGrantState(adminComponent, packageName, permission, newState);
-                                String status = isChecked ? "Granted" : "Denied";
-                                Toast.makeText(AppDetailActivity.this, shortName + " " + status, Toast.LENGTH_SHORT).show();
-
-                            } catch (SecurityException e) {
-                                buttonView.setChecked(!isChecked);
+                                boolean success = DpmHelper.setPermissionGrantState(
+                                        AppDetailActivity.this, packageName, permission, newState);
+                                if (success) {
+                                    String status = isChecked ? "Granted" : "Denied";
+                                    Toast.makeText(AppDetailActivity.this, shortName + " " + status, Toast.LENGTH_SHORT).show();
+                                } else {
+                                    buttonView.setChecked(!isChecked);
+                                }
                             }
-                        }
-                    });
-
+                        });
+                    }
                 } else {
                     permSwitch.setChecked(true);
                     permSwitch.setEnabled(false);

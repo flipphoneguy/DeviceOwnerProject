@@ -7,6 +7,33 @@
     android:padding="8dp"
     tools:context=".MainActivity">
 
+    <!-- Status Display -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:id="@+id/status_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/status_no_privileges"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:padding="8dp" />
+
+        <Button
+            android:id="@+id/dhizuku_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/connect_dhizuku"
+            android:textSize="12sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
     <!-- Top Bar with Install Button and Options -->
     <LinearLayout
         android:layout_width="match_parent"
