@@ -51,6 +51,8 @@ public class MainActivity extends Activity {
     private Button uninstallButton;
     private Button installFileButton;
     private Button optionsButton;
+    private Button dhizukuButton;
+    private TextView statusText;
     private DevicePolicyManager dpm;
     private PackageManager pm;
     private ComponentName adminComponent;
@@ -73,9 +75,14 @@ public class MainActivity extends Activity {
         uninstallButton = findViewById(R.id.uninstall_button);
         installFileButton = findViewById(R.id.install_file_button);
         optionsButton = findViewById(R.id.options_button);
-        
+        statusText = findViewById(R.id.status_text);
+        dhizukuButton = findViewById(R.id.dhizuku_button);
+
         appAdapter = new AppAdapter();
         appListView.setAdapter(appAdapter);
+
+        // Setup Dhizuku button
+        setupDhizukuButton();
 
         // Set click listener for the app list
         appListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -118,7 +125,70 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        updateStatusDisplay();
         loadApplications();
+    }
+
+    private void setupDhizukuButton() {
+        if (dhizukuButton == null) return;
+
+        dhizukuButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!DpmHelper.isDhizukuInstalled(MainActivity.this)) {
+                    Toast.makeText(MainActivity.this, R.string.dhizuku_not_available, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                DpmHelper.requestDhizukuPermission(MainActivity.this, new DpmHelper.PermissionCallback() {
+                    @Override
+                    public void onResult(boolean granted) {
+                        if (granted) {
+                            Toast.makeText(MainActivity.this, R.string.dhizuku_permission_granted, Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(MainActivity.this, R.string.dhizuku_permission_denied, Toast.LENGTH_SHORT).show();
+                        }
+                        updateStatusDisplay();
+                        loadApplications();
+                    }
+                });
+            }
+        });
+    }
+
+    private void updateStatusDisplay() {
+        if (statusText == null) return;
+
+        DpmHelper.Mode mode = DpmHelper.getActiveMode(this);
+        switch (mode) {
+            case NATIVE_OWNER:
+                statusText.setText(R.string.status_native_owner);
+                statusText.setTextColor(0xFF4CAF50); // Green
+                if (dhizukuButton != null) {
+                    dhizukuButton.setVisibility(View.GONE);
+                }
+                break;
+            case DHIZUKU:
+                statusText.setText(R.string.status_dhizuku_connected);
+                statusText.setTextColor(0xFF2196F3); // Blue
+                if (dhizukuButton != null) {
+                    dhizukuButton.setVisibility(View.GONE);
+                }
+                break;
+            case NONE:
+            default:
+                statusText.setText(R.string.status_no_privileges);
+                statusText.setTextColor(0xFFFF5722); // Orange
+                // Show Dhizuku button if Dhizuku is installed but not connected
+                if (dhizukuButton != null) {
+                    if (DpmHelper.isDhizukuInstalled(this)) {
+                        dhizukuButton.setVisibility(View.VISIBLE);
+                    } else {
+                        dhizukuButton.setVisibility(View.GONE);
+                    }
+                }
+                break;
+        }
     }
 
     @Override
@@ -419,18 +489,17 @@ public class MainActivity extends Activity {
     @SuppressWarnings("deprecation")
     private void removeAdminAndUninstall() {
         try {
-            // 1. Check if we are Device Owner and clear it
-            if (dpm.isDeviceOwnerApp(getPackageName())) {
+            DpmHelper.Mode mode = DpmHelper.getActiveMode(this);
+
+            // 1. Check if we are Device Owner and clear it (only in native mode)
+            if (mode == DpmHelper.Mode.NATIVE_OWNER) {
                 Toast.makeText(this, "Clearing Device Owner status...", Toast.LENGTH_SHORT).show();
-                // This method removes the DO status, making us a normal app again
-                dpm.clearDeviceOwnerApp(getPackageName());
+                DpmHelper.clearDeviceOwner(this);
             }
 
-            // 2. Check if we are an Active Admin (Profile Owner or just Admin) and remove it
-            if (dpm.isAdminActive(adminComponent)) {
-                Toast.makeText(this, "Removing Active Admin...", Toast.LENGTH_SHORT).show();
-                dpm.removeActiveAdmin(adminComponent);
-            }
+            // 2. Remove Active Admin status
+            Toast.makeText(this, "Removing Active Admin...", Toast.LENGTH_SHORT).show();
+            DpmHelper.removeActiveAdmin(this);
 
             // 3. Launch the system uninstall dialog
             Uri packageUri = Uri.parse("package:" + getPackageName());
@@ -444,10 +513,15 @@ public class MainActivity extends Activity {
     }
 
     private void loadApplications() {
-        if (!dpm.isDeviceOwnerApp(getPackageName())) {
+        DpmHelper.Mode mode = DpmHelper.getActiveMode(this);
+        if (mode == DpmHelper.Mode.NONE) {
             // Update the button text if we aren't admin anymore
             if (uninstallButton != null) {
                  uninstallButton.setText("Uninstall App (Not Admin)");
+            }
+        } else {
+            if (uninstallButton != null) {
+                 uninstallButton.setText("Uninstall App / Remove Admin");
             }
         }
 
@@ -490,13 +564,7 @@ public class MainActivity extends Activity {
 
             ApplicationInfo app = appList.get(position);
             String appName = app.loadLabel(pm).toString();
-            boolean isHidden = false;
-
-            try {
-                isHidden = dpm.isApplicationHidden(adminComponent, app.packageName);
-            } catch (SecurityException e) {
-                // Not DO
-            }
+            boolean isHidden = DpmHelper.isApplicationHidden(MainActivity.this, app.packageName);
 
             String displayName = appName + (isHidden ? " (Hidden)" : "");
             holder.textView.setText(displayName);

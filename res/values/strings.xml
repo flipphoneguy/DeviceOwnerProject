@@ -4,4 +4,13 @@
     <string name="app_list_title">Installed Applications</string>
     <string name="hide_application">Hide Application</string>
     <string name="permissions">Permissions:</string>
+
+    <!-- Dhizuku Status Strings -->
+    <string name="status_native_owner">Native Device Owner</string>
+    <string name="status_dhizuku_connected">Dhizuku Connected</string>
+    <string name="status_no_privileges">No Privileges</string>
+    <string name="connect_dhizuku">Connect to Dhizuku</string>
+    <string name="dhizuku_permission_granted">Dhizuku permission granted</string>
+    <string name="dhizuku_permission_denied">Dhizuku permission denied</string>
+    <string name="dhizuku_not_available">Dhizuku is not available</string>
 </resources>
