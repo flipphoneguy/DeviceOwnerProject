@@ -20,7 +20,7 @@ These devices restrict app installation, allowing only ADB or Device Owner/Admin
 
 1.  **Installation**:
     *   [Download Latest Release](https://github.com/flipphoneguy/DeviceOwnerProject/releases/latest/download/DeviceAdminApp.apk)
-    *   Install via ADB for the first time: `adb install -t -r DeviceAdminApp.apk`
+    *   Install via ADB for the first time: `adb install -t -r -g DeviceAdminApp.apk`
     *   **Important**: Remove the SIM card before setting the device owner. Sonim devices treat the SIM as an account and may block the command if present.
     *   Set it as Device Owner:
         ```bash
