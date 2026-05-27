@@ -1,98 +1,225 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="8dp"
-    tools:context=".MainActivity">
+    android:background="@color/bg_page">
 
-    <!-- Status Display -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:orientation="horizontal"
+        android:background="@color/bg_header"
         android:gravity="center_vertical"
-        android:layout_marginBottom="8dp">
+        android:paddingLeft="12dp"
+        android:paddingRight="4dp">
 
         <TextView
-            android:id="@+id/status_text"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/status_no_privileges"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:padding="8dp" />
+            android:text="@string/app_name"
+            android:textColor="@color/text_on_primary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
         <Button
-            android:id="@+id/dhizuku_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/connect_dhizuku"
-            android:textSize="12sp"
-            android:visibility="gone" />
-    </LinearLayout>
-
-    <!-- Top Bar with Install Button and Options -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="16dp">
-
-        <Button
-            android:id="@+id/install_file_button"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Install File (APK/XAPK)"
+            android:id="@+id/btn_info"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:text="@string/btn_info"
             android:textSize="18sp"
-            android:padding="16dp" />
-
-        <Button
-            android:id="@+id/options_button"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:text="⋮"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_marginLeft="4dp" />
+            android:textColor="@color/text_on_primary"
+            android:background="@drawable/btn_header"
+            android:focusable="true"
+            android:nextFocusDown="@+id/status_text" />
     </LinearLayout>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/app_list_title"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp"/>
-
-    <!-- The list takes up all available space -->
-    <ListView
-        android:id="@+id/app_list"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginBottom="8dp"/>
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
-    <!-- The new Self-Uninstall Button -->
-    <Button
-        android:id="@+id/uninstall_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Uninstall App / Remove Admin"
-        android:backgroundTint="#FF0000"
-        android:textColor="#FFFFFF"
-        android:padding="12dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Credits: @flipphoneguy"
-        android:textSize="12sp"
-        android:gravity="center"
-        android:layout_marginTop="4dp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/card_bg"
+                android:padding="10dp"
+                android:layout_marginBottom="6dp">
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/status_label"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/status_text"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:gravity="right"
+                        android:minHeight="32dp"
+                        android:paddingLeft="6dp"
+                        android:paddingRight="6dp"
+                        android:nextFocusUp="@id/btn_info"
+                        android:nextFocusDown="@+id/perm_warning"
+                        android:text="@string/status_no_privileges" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/perm_warning"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:gravity="right"
+                    android:minHeight="32dp"
+                    android:paddingLeft="6dp"
+                    android:paddingRight="6dp"
+                    android:textColor="@color/status_warn"
+                    android:visibility="gone"
+                    android:nextFocusUp="@id/status_text"
+                    android:nextFocusDown="@+id/btn_connect_dhizuku" />
+
+                <Button
+                    android:id="@+id/btn_connect_dhizuku"
+                    style="@style/BtnOutline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_connect_dhizuku"
+                    android:layout_marginTop="8dp"
+                    android:visibility="gone"
+                    android:nextFocusUp="@id/perm_warning"
+                    android:nextFocusDown="@+id/btn_install_file" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/card_bg"
+                android:padding="10dp"
+                android:layout_marginBottom="6dp">
+
+                <Button
+                    android:id="@+id/btn_install_file"
+                    style="@style/BtnPrimary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_install_file"
+                    android:nextFocusUp="@id/btn_connect_dhizuku"
+                    android:nextFocusDown="@+id/search_box" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/card_bg"
+                android:padding="10dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/apps_label"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="6dp" />
+
+                <EditText
+                    android:id="@+id/search_box"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/search_hint"
+                    android:textSize="13sp"
+                    android:singleLine="true"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:minHeight="36dp"
+                    android:nextFocusUp="@id/btn_install_file"
+                    android:nextFocusDown="@+id/filter_user" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="6dp">
+
+                    <Button
+                        android:id="@+id/filter_user"
+                        style="@style/BtnCompact"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginRight="3dp"
+                        android:text="@string/filter_user"
+                        android:nextFocusUp="@id/search_box"
+                        android:nextFocusRight="@+id/filter_system"
+                        android:nextFocusDown="@+id/app_list_container" />
+
+                    <Button
+                        android:id="@+id/filter_system"
+                        style="@style/BtnCompact"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="3dp"
+                        android:layout_marginRight="3dp"
+                        android:text="@string/filter_system"
+                        android:nextFocusUp="@id/search_box"
+                        android:nextFocusLeft="@id/filter_user"
+                        android:nextFocusRight="@+id/filter_all"
+                        android:nextFocusDown="@id/app_list_container" />
+
+                    <Button
+                        android:id="@+id/filter_all"
+                        style="@style/BtnCompact"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="3dp"
+                        android:text="@string/filter_all"
+                        android:nextFocusUp="@id/search_box"
+                        android:nextFocusLeft="@id/filter_system"
+                        android:nextFocusDown="@id/app_list_container" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/app_list_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <TextView
+                    android:id="@+id/apps_empty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/apps_loading"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>

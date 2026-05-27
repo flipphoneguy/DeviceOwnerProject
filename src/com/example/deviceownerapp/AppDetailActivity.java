@@ -3,7 +3,6 @@ package com.example.deviceownerapp;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.admin.DevicePolicyManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.ApplicationInfo;
@@ -11,6 +10,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.Switch;
@@ -19,22 +19,23 @@ import android.widget.Toast;
 
 public class AppDetailActivity extends Activity {
 
-    private static final String TAG = "AppDetailActivity";
+    private static final String TAG = "AppDetail";
 
-    private DevicePolicyManager dpm;
     private PackageManager pm;
-    private ComponentName adminComponent;
     private String packageName;
-
-    private TextView appNameText;
     private Switch hideSwitch;
     private LinearLayout permissionContainer;
-    private boolean isProgrammaticChange = false;
+    private boolean suppressHideChange = false;
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(ThemeHelper.wrap(base));
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.app_detail_layout);
+        setContentView(R.layout.activity_app_detail);
 
         packageName = getIntent().getStringExtra("packageName");
         if (packageName == null) {
@@ -42,25 +43,29 @@ public class AppDetailActivity extends Activity {
             return;
         }
 
-        dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
         pm = getPackageManager();
-        adminComponent = new ComponentName(this, DeviceAdmin.class);
+        hideSwitch = (Switch) findViewById(R.id.hide_switch);
+        permissionContainer = (LinearLayout) findViewById(R.id.permission_container);
 
-        appNameText = findViewById(R.id.app_name_text);
-        hideSwitch = findViewById(R.id.hide_switch);
-        permissionContainer = findViewById(R.id.permission_container);
+        findViewById(R.id.btn_back).setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { finish(); }
+        });
 
         loadAppInfo();
-        loadPermissions();
         setupHideSwitch();
+        loadPermissions();
     }
 
     private void loadAppInfo() {
+        TextView nameView = (TextView) findViewById(R.id.app_name_text);
+        TextView pkgView = (TextView) findViewById(R.id.app_pkg_text);
         try {
-            ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
-            appNameText.setText(appInfo.loadLabel(pm));
+            ApplicationInfo info = pm.getApplicationInfo(packageName, 0);
+            nameView.setText(info.loadLabel(pm));
+            pkgView.setText(packageName);
         } catch (PackageManager.NameNotFoundException e) {
-            appNameText.setText("Error: App not found");
+            nameView.setText(packageName);
+            pkgView.setText("");
         }
     }
 
@@ -69,118 +74,113 @@ public class AppDetailActivity extends Activity {
         if (mode == DpmHelper.Mode.NONE) {
             hideSwitch.setEnabled(false);
         } else {
-            boolean isHidden = DpmHelper.isApplicationHidden(this, packageName);
-            isProgrammaticChange = true;
-            hideSwitch.setChecked(isHidden);
-            isProgrammaticChange = false;
+            suppressHideChange = true;
+            hideSwitch.setChecked(DpmHelper.isApplicationHidden(this, packageName));
+            suppressHideChange = false;
         }
-
         hideSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked) {
-                if (isProgrammaticChange) return;
-
-                if (isChecked) {
-                    // Show warning before hiding
+            public void onCheckedChanged(final CompoundButton btn, final boolean checked) {
+                if (suppressHideChange) return;
+                if (checked) {
                     new AlertDialog.Builder(AppDetailActivity.this)
-                        .setTitle("Warning")
-                        .setMessage("Hiding this app will cause the applications menu to not show any user installed apps at all.")
-                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                setAppHidden(true, buttonView);
-                            }
-                        })
-                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                isProgrammaticChange = true;
-                                buttonView.setChecked(false);
-                                isProgrammaticChange = false;
-                            }
-                        })
-                        .setCancelable(false)
-                        .show();
+                            .setTitle(R.string.hide_warning_title)
+                            .setMessage(R.string.hide_warning_msg)
+                            .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
+                                @Override public void onClick(DialogInterface d, int which) {
+                                    applyHidden(true, btn);
+                                }
+                            })
+                            .setNegativeButton(R.string.btn_cancel, new DialogInterface.OnClickListener() {
+                                @Override public void onClick(DialogInterface d, int which) {
+                                    suppressHideChange = true;
+                                    btn.setChecked(false);
+                                    suppressHideChange = false;
+                                }
+                            })
+                            .setCancelable(false)
+                            .show();
                 } else {
-                    setAppHidden(false, buttonView);
+                    applyHidden(false, btn);
                 }
             }
         });
     }
 
-    private void setAppHidden(boolean hidden, CompoundButton buttonView) {
-        boolean success = DpmHelper.setApplicationHidden(this, packageName, hidden);
-        if (success) {
-            String status = hidden ? "hidden" : "unhidden";
-            Toast.makeText(AppDetailActivity.this, "App " + status, Toast.LENGTH_SHORT).show();
+    private void applyHidden(boolean hidden, CompoundButton btn) {
+        boolean ok = DpmHelper.setApplicationHidden(this, packageName, hidden);
+        if (ok) {
+            Toast.makeText(this, hidden ? "App hidden" : "App unhidden",
+                    Toast.LENGTH_SHORT).show();
         } else {
-            Logger.log(AppDetailActivity.this, TAG, "Failed to change hidden state");
-            isProgrammaticChange = true;
-            buttonView.setChecked(!hidden);
-            isProgrammaticChange = false;
+            Logger.log(this, TAG, "Failed to change hidden state");
+            suppressHideChange = true;
+            btn.setChecked(!hidden);
+            suppressHideChange = false;
         }
     }
 
+    @SuppressWarnings("deprecation")
     private void loadPermissions() {
+        permissionContainer.removeAllViews();
         try {
-            PackageInfo pkgInfo = pm.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS);
-            String[] permissions = pkgInfo.requestedPermissions;
-
-            if (permissions == null || permissions.length == 0) {
-                TextView noPerms = new TextView(this);
-                noPerms.setText("No permissions requested.");
-                permissionContainer.addView(noPerms);
+            PackageInfo info = pm.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS);
+            String[] perms = info.requestedPermissions;
+            if (perms == null || perms.length == 0) {
+                TextView none = new TextView(this);
+                none.setText(R.string.no_permissions);
+                none.setTextColor(getColor(R.color.text_secondary));
+                none.setTextSize(13);
+                permissionContainer.addView(none);
                 return;
             }
-
-            for (final String permission : permissions) {
+            DpmHelper.Mode mode = DpmHelper.getActiveMode(this);
+            for (final String permission : perms) {
                 boolean isRuntime = false;
                 try {
                     PermissionInfo pInfo = pm.getPermissionInfo(permission, 0);
-                    if (pInfo.protectionLevel == PermissionInfo.PROTECTION_DANGEROUS) {
-                        isRuntime = true;
-                    }
-                } catch (PackageManager.NameNotFoundException e) {
-                }
+                    int level = pInfo.protectionLevel & PermissionInfo.PROTECTION_MASK_BASE;
+                    isRuntime = (level == PermissionInfo.PROTECTION_DANGEROUS);
+                } catch (PackageManager.NameNotFoundException ignored) {}
 
-                Switch permSwitch = new Switch(this);
-                final String shortName = permission.substring(permission.lastIndexOf(".") + 1);
-                permSwitch.setText(shortName);
-                permSwitch.setMinHeight(120);
+                Switch sw = new Switch(this);
+                final String shortName = permission.contains(".")
+                        ? permission.substring(permission.lastIndexOf('.') + 1)
+                        : permission;
+                sw.setText(shortName);
+                sw.setTextColor(getColor(R.color.text_primary));
+                sw.setTextSize(13);
+                sw.setMinHeight(40);
+                sw.setFocusable(true);
 
-                if (isRuntime) {
-                    DpmHelper.Mode mode = DpmHelper.getActiveMode(this);
-                    if (mode == DpmHelper.Mode.NONE) {
-                        permSwitch.setEnabled(false);
-                    } else {
-                        int grantState = DpmHelper.getPermissionGrantState(this, packageName, permission);
-                        permSwitch.setChecked(grantState == DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED);
-
-                        permSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                            @Override
-                            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                                int newState = isChecked ?
-                                        DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED :
-                                        DevicePolicyManager.PERMISSION_GRANT_STATE_DENIED;
-
-                                boolean success = DpmHelper.setPermissionGrantState(
-                                        AppDetailActivity.this, packageName, permission, newState);
-                                if (success) {
-                                    String status = isChecked ? "Granted" : "Denied";
-                                    Toast.makeText(AppDetailActivity.this, shortName + " " + status, Toast.LENGTH_SHORT).show();
-                                } else {
-                                    buttonView.setChecked(!isChecked);
-                                }
-                            }
-                        });
-                    }
+                if (!isRuntime) {
+                    sw.setChecked(true);
+                    sw.setEnabled(false);
+                } else if (mode == DpmHelper.Mode.NONE) {
+                    sw.setEnabled(false);
                 } else {
-                    permSwitch.setChecked(true);
-                    permSwitch.setEnabled(false);
+                    int state = DpmHelper.getPermissionGrantState(this, packageName, permission);
+                    sw.setChecked(state == DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED);
+                    sw.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                        @Override
+                        public void onCheckedChanged(CompoundButton btn, boolean checked) {
+                            int newState = checked
+                                    ? DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED
+                                    : DevicePolicyManager.PERMISSION_GRANT_STATE_DENIED;
+                            boolean ok = DpmHelper.setPermissionGrantState(
+                                    AppDetailActivity.this, packageName, permission, newState);
+                            if (ok) {
+                                Toast.makeText(AppDetailActivity.this,
+                                        shortName + (checked ? " granted" : " denied"),
+                                        Toast.LENGTH_SHORT).show();
+                            } else {
+                                btn.setChecked(!checked);
+                            }
+                        }
+                    });
                 }
-                permissionContainer.addView(permSwitch);
+                permissionContainer.addView(sw);
             }
-
         } catch (Exception e) {
             Logger.log(this, TAG, "Could not load permissions: " + e.getMessage());
         }

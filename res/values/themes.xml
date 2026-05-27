@@ -1,7 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base application theme. -->
-    <!-- Using .NoActionBar as a simpler base -->
-    <style name="Theme.DeviceOwnerApp" parent="android:Theme.Material.Light.NoActionBar">
-        <!-- Customize your theme here. -->
+    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">@color/primary</item>
+        <item name="android:colorPrimaryDark">@color/primary_dark</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/bg_page</item>
+    </style>
+
+    <style name="AppTheme.Dialog" parent="android:Theme.Material.Light.Dialog">
+        <item name="android:colorPrimary">@color/primary</item>
+        <item name="android:colorAccent">@color/accent</item>
+    </style>
+
+    <style name="BtnPrimary">
+        <item name="android:background">@drawable/btn_filled</item>
+        <item name="android:textColor">@color/text_on_primary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:minHeight">40dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:focusable">true</item>
+        <item name="android:paddingLeft">12dp</item>
+        <item name="android:paddingRight">12dp</item>
+    </style>
+
+    <style name="BtnOutline">
+        <item name="android:background">@drawable/btn_outline</item>
+        <item name="android:textColor">@color/btn_outline_text</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:minHeight">40dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:focusable">true</item>
+        <item name="android:paddingLeft">12dp</item>
+        <item name="android:paddingRight">12dp</item>
+    </style>
+
+    <style name="BtnDanger">
+        <item name="android:background">@drawable/btn_danger</item>
+        <item name="android:textColor">@color/text_on_primary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:minHeight">40dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:focusable">true</item>
+        <item name="android:paddingLeft">12dp</item>
+        <item name="android:paddingRight">12dp</item>
+    </style>
+
+    <style name="BtnCompact">
+        <item name="android:background">@drawable/btn_outline</item>
+        <item name="android:textColor">@color/btn_outline_text</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:minHeight">28dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:focusable">true</item>
+        <item name="android:paddingLeft">6dp</item>
+        <item name="android:paddingRight">6dp</item>
+        <item name="android:paddingTop">2dp</item>
+        <item name="android:paddingBottom">2dp</item>
     </style>
 </resources>

@@ -1,0 +1,8 @@
+{
+    "package": "com.example.deviceownerapp",
+    "name": "DeviceAdminApp",
+    "min_sdk": 23,
+    "target_sdk": 35,
+    "repo": "flipphoneguy/DeviceOwnerProject",
+    "github_profile": "https://github.com/flipphoneguy"
+}

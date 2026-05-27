@@ -2,7 +2,6 @@ package androidx.core.os;
 
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.Parcelable;
 
 import java.lang.reflect.Method;
 
@@ -38,7 +37,7 @@ public final class BundleCompat {
     /**
      * Type-safe getParcelable for API 33+, falls back to deprecated version.
      */
-    @SuppressWarnings({"unchecked", "deprecation"})
+    @SuppressWarnings("unchecked")
     public static <T> T getParcelable(Bundle bundle, String key, Class<T> clazz) {
         if (bundle == null) {
             return null;
@@ -58,7 +57,7 @@ public final class BundleCompat {
     /**
      * Type-safe getParcelableArrayList for API 33+, falls back to deprecated version.
      */
-    @SuppressWarnings({"unchecked", "deprecation"})
+    @SuppressWarnings("unchecked")
     public static <T> java.util.ArrayList<T> getParcelableArrayList(Bundle bundle, String key, Class<? extends T> clazz) {
         if (bundle == null) {
             return null;
@@ -77,7 +76,7 @@ public final class BundleCompat {
     /**
      * Type-safe getSparseParcelableArray for API 33+, falls back to deprecated version.
      */
-    @SuppressWarnings({"unchecked", "deprecation"})
+    @SuppressWarnings("unchecked")
     public static <T> android.util.SparseArray<T> getSparseParcelableArray(Bundle bundle, String key, Class<? extends T> clazz) {
         if (bundle == null) {
             return null;

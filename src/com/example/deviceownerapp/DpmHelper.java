@@ -12,7 +12,6 @@ import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.os.Parcel;
-import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 
 import com.rosan.dhizuku.api.Dhizuku;
@@ -125,7 +124,7 @@ public class DpmHelper {
      * Request permission from Dhizuku.
      * This will open the Dhizuku app for user authorization.
      */
-    public static void requestDhizukuPermission(Activity activity, final PermissionCallback callback) {
+    public static void requestDhizukuPermission(final Activity activity, final PermissionCallback callback) {
         try {
             if (!initDhizuku(activity)) {
                 callback.onResult(false);
@@ -255,6 +254,7 @@ public class DpmHelper {
     /**
      * Clear Device Owner status (only works in native mode).
      */
+    @SuppressWarnings("deprecation")
     public static void clearDeviceOwner(Context context) {
         Mode mode = getActiveMode(context);
         if (mode == Mode.NATIVE_OWNER) {
@@ -566,12 +566,21 @@ public class DpmHelper {
             PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
                     PackageInstaller.SessionParams.MODE_FULL_INSTALL);
 
-            // Create session through wrapped installer
-            java.lang.reflect.Method createSessionMethod = wrappedIPackageInstaller.getClass()
-                    .getMethod("createSession", PackageInstaller.SessionParams.class, String.class, String.class, int.class);
-
+            // Create session through wrapped installer.
+            // The IPackageInstaller.createSession signature changed across Android versions:
+            //   API 21-30: (SessionParams, String installerPackageName, int userId)
+            //   API 31+:   (SessionParams, String installerPackageName, String attributionTag, int userId)
             String dhizukuPackage = Dhizuku.getOwnerComponent().getPackageName();
-            sessionId = (int) createSessionMethod.invoke(wrappedIPackageInstaller, params, dhizukuPackage, null, 0);
+            java.lang.reflect.Method createSessionMethod;
+            try {
+                createSessionMethod = wrappedIPackageInstaller.getClass()
+                        .getMethod("createSession", PackageInstaller.SessionParams.class, String.class, String.class, int.class);
+                sessionId = (int) createSessionMethod.invoke(wrappedIPackageInstaller, params, dhizukuPackage, null, 0);
+            } catch (NoSuchMethodException e) {
+                createSessionMethod = wrappedIPackageInstaller.getClass()
+                        .getMethod("createSession", PackageInstaller.SessionParams.class, String.class, int.class);
+                sessionId = (int) createSessionMethod.invoke(wrappedIPackageInstaller, params, dhizukuPackage, 0);
+            }
 
             Logger.log(context, TAG, "Created Dhizuku session: " + sessionId);
 
@@ -640,234 +649,6 @@ public class DpmHelper {
             return (IBinder) getServiceMethod.invoke(null, "package");
         } catch (Exception e) {
             return null;
-        }
-    }
-
-    private static IBinder getPackageInstallerBinder() {
-        try {
-            Class<?> serviceManagerClass = Class.forName("android.os.ServiceManager");
-            java.lang.reflect.Method getServiceMethod = serviceManagerClass.getMethod("getService", String.class);
-            IBinder pmBinder = (IBinder) getServiceMethod.invoke(null, "package");
-            if (pmBinder == null) return null;
-
-            // Get PackageManager stub
-            Class<?> pmStubClass = Class.forName("android.content.pm.IPackageManager$Stub");
-            java.lang.reflect.Method asInterfaceMethod = pmStubClass.getMethod("asInterface", IBinder.class);
-            Object pm = asInterfaceMethod.invoke(null, pmBinder);
-
-            // Get PackageInstaller from PackageManager
-            java.lang.reflect.Method getInstallerMethod = pm.getClass().getMethod("getPackageInstaller");
-            Object installer = getInstallerMethod.invoke(pm);
-
-            // Get the binder from the installer proxy
-            java.lang.reflect.Method asBinderMethod = installer.getClass().getMethod("asBinder");
-            return (IBinder) asBinderMethod.invoke(installer);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static int createSessionThroughBinder(IBinder installer, String callerPackage) {
-        Parcel data = Parcel.obtain();
-        Parcel reply = Parcel.obtain();
-        try {
-            data.writeInterfaceToken("android.content.pm.IPackageInstaller");
-            // SessionParams
-            PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
-                    PackageInstaller.SessionParams.MODE_FULL_INSTALL);
-            data.writeInt(1); // params not null
-            params.writeToParcel(data, 0);
-            data.writeString(callerPackage); // installerPackageName
-
-            // Transaction code for createSession
-            int transactionCode = getPackageInstallerTransactionCode("createSession");
-            installer.transact(transactionCode, data, reply, 0);
-            reply.readException();
-            return reply.readInt();
-        } catch (Exception e) {
-            return -1;
-        } finally {
-            data.recycle();
-            reply.recycle();
-        }
-    }
-
-    private static IBinder openSessionThroughBinder(IBinder installer, int sessionId, String callerPackage) {
-        Parcel data = Parcel.obtain();
-        Parcel reply = Parcel.obtain();
-        try {
-            data.writeInterfaceToken("android.content.pm.IPackageInstaller");
-            data.writeInt(sessionId);
-
-            int transactionCode = getPackageInstallerTransactionCode("openSession");
-            installer.transact(transactionCode, data, reply, 0);
-            reply.readException();
-
-            // Read the session binder
-            IBinder sessionBinder = reply.readStrongBinder();
-            return sessionBinder;
-        } catch (Exception e) {
-            return null;
-        } finally {
-            data.recycle();
-            reply.recycle();
-        }
-    }
-
-    private static void abandonSessionThroughBinder(IBinder installer, int sessionId, String callerPackage) {
-        Parcel data = Parcel.obtain();
-        Parcel reply = Parcel.obtain();
-        try {
-            data.writeInterfaceToken("android.content.pm.IPackageInstaller");
-            data.writeInt(sessionId);
-
-            int transactionCode = getPackageInstallerTransactionCode("abandonSession");
-            installer.transact(transactionCode, data, reply, 0);
-            reply.readException();
-        } catch (Exception ignored) {
-        } finally {
-            data.recycle();
-            reply.recycle();
-        }
-    }
-
-    private static boolean writeToSessionThroughBinder(IBinder session, String name, java.io.InputStream apkStream) {
-        ParcelFileDescriptor[] pipe = null;
-        try {
-            // Create a pipe to transfer data
-            pipe = ParcelFileDescriptor.createPipe();
-            final ParcelFileDescriptor readEnd = pipe[0];
-            final ParcelFileDescriptor writeEnd = pipe[1];
-
-            // Start a thread to write data to the pipe
-            final java.io.InputStream finalStream = apkStream;
-            Thread writerThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try (java.io.OutputStream out = new ParcelFileDescriptor.AutoCloseOutputStream(writeEnd)) {
-                        byte[] buffer = new byte[65536];
-                        int len;
-                        while ((len = finalStream.read(buffer)) != -1) {
-                            out.write(buffer, 0, len);
-                        }
-                    } catch (Exception e) {
-                        // Ignore
-                    }
-                }
-            });
-            writerThread.start();
-
-            // Call openWrite on the session
-            Parcel data = Parcel.obtain();
-            Parcel reply = Parcel.obtain();
-            try {
-                data.writeInterfaceToken("android.content.pm.IPackageInstallerSession");
-                data.writeString(name);
-                data.writeLong(0); // offsetBytes
-                data.writeLong(-1); // lengthBytes (-1 = unknown)
-
-                int transactionCode = getSessionTransactionCode("openWrite");
-                session.transact(transactionCode, data, reply, 0);
-                reply.readException();
-
-                // Get the ParcelFileDescriptor for writing
-                ParcelFileDescriptor pfd = null;
-                if (reply.readInt() != 0) {
-                    pfd = ParcelFileDescriptor.CREATOR.createFromParcel(reply);
-                }
-
-                if (pfd != null) {
-                    // Write the APK data through the returned fd
-                    try (java.io.OutputStream out = new ParcelFileDescriptor.AutoCloseOutputStream(pfd);
-                         java.io.InputStream in = new ParcelFileDescriptor.AutoCloseInputStream(readEnd)) {
-                        byte[] buffer = new byte[65536];
-                        int len;
-                        while ((len = in.read(buffer)) != -1) {
-                            out.write(buffer, 0, len);
-                        }
-                    }
-                    writerThread.join(30000);
-
-                    // Call fsync
-                    fsyncSessionThroughBinder(session, name);
-                    return true;
-                }
-            } finally {
-                data.recycle();
-                reply.recycle();
-            }
-
-            writerThread.join(30000);
-            return false;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private static void fsyncSessionThroughBinder(IBinder session, String name) {
-        Parcel data = Parcel.obtain();
-        Parcel reply = Parcel.obtain();
-        try {
-            data.writeInterfaceToken("android.content.pm.IPackageInstallerSession");
-            data.writeString(name);
-
-            int transactionCode = getSessionTransactionCode("fsync");
-            session.transact(transactionCode, data, reply, 0);
-            reply.readException();
-        } catch (Exception ignored) {
-        } finally {
-            data.recycle();
-            reply.recycle();
-        }
-    }
-
-    private static void commitSessionThroughBinder(Context context, IBinder session, int sessionId) {
-        Parcel data = Parcel.obtain();
-        Parcel reply = Parcel.obtain();
-        try {
-            data.writeInterfaceToken("android.content.pm.IPackageInstallerSession");
-
-            // Create an IntentSender for the result
-            Intent intent = new Intent(Intent.ACTION_PACKAGE_ADDED);
-            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-            if (android.os.Build.VERSION.SDK_INT >= 31) {
-                flags |= 33554432; // FLAG_MUTABLE
-            }
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(context, sessionId, intent, flags);
-            IntentSender intentSender = pendingIntent.getIntentSender();
-
-            data.writeInt(1); // intentSender not null
-            intentSender.writeToParcel(data, 0);
-            if (android.os.Build.VERSION.SDK_INT >= 28) {
-                data.writeInt(0); // forTransferred = false
-            }
-
-            int transactionCode = getSessionTransactionCode("commit");
-            session.transact(transactionCode, data, reply, 0);
-            reply.readException();
-        } catch (Exception e) {
-            Logger.log(context, TAG, "commitSessionThroughBinder error: " + e.getMessage());
-        } finally {
-            data.recycle();
-            reply.recycle();
-        }
-    }
-
-    private static int getPackageInstallerTransactionCode(String methodName) {
-        try {
-            Class<?> stubClass = Class.forName("android.content.pm.IPackageInstaller$Stub");
-            String fieldName = "TRANSACTION_" + methodName;
-            java.lang.reflect.Field field = stubClass.getDeclaredField(fieldName);
-            field.setAccessible(true);
-            return field.getInt(null);
-        } catch (Exception e) {
-            // Fallback - these are approximate for Android 8.1+
-            switch (methodName) {
-                case "createSession": return 1;
-                case "openSession": return 3;
-                case "abandonSession": return 5;
-                default: return 0;
-            }
         }
     }
 

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#34495E</color>
+    <color name="primary_dark">#2C3E50</color>
+    <color name="accent">#1ABC9C</color>
+
+    <color name="bg_page">#F0F2F8</color>
+    <color name="bg_card">#FFFFFF</color>
+    <color name="bg_header">#34495E</color>
+
+    <color name="text_primary">#1A1A2E</color>
+    <color name="text_secondary">#5C6370</color>
+    <color name="text_on_primary">#FFFFFF</color>
+
+    <color name="btn_normal">#34495E</color>
+    <color name="btn_focused">#2C3E50</color>
+    <color name="btn_pressed">#1B2631</color>
+    <color name="btn_disabled">#B0B8C8</color>
+    <color name="btn_outline_border">#34495E</color>
+    <color name="btn_outline_text">#34495E</color>
+    <color name="btn_outline_focused_bg">#E1E8ED</color>
+
+    <color name="btn_danger_normal">#C0392B</color>
+    <color name="btn_danger_focused">#A93226</color>
+    <color name="btn_danger_pressed">#922B21</color>
+
+    <color name="item_focused_bg">#DCE3EB</color>
+    <color name="item_focused_border">#34495E</color>
+    <color name="item_pressed_bg">#C5CFD8</color>
+
+    <color name="card_border">#DDE0E6</color>
+
+    <color name="status_ok">#27AE60</color>
+    <color name="status_warn">#E67E22</color>
+    <color name="status_info">#2980B9</color>
+</resources>

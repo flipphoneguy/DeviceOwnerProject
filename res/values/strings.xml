@@ -1,16 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DeviceOwnerApp</string>
+    <string name="app_name">Device Admin</string>
     <string name="admin_description">Device Owner for app management</string>
-    <string name="app_list_title">Installed Applications</string>
-    <string name="hide_application">Hide Application</string>
-    <string name="permissions">Permissions:</string>
 
-    <!-- Dhizuku Status Strings -->
+    <!-- Main screen -->
+    <string name="btn_info">ⓘ</string>
+    <string name="status_label">Status</string>
     <string name="status_native_owner">Native Device Owner</string>
     <string name="status_dhizuku_connected">Dhizuku Connected</string>
     <string name="status_no_privileges">No Privileges</string>
-    <string name="connect_dhizuku">Connect to Dhizuku</string>
+    <string name="btn_connect_dhizuku">Connect Dhizuku</string>
+    <string name="btn_install_file">Install APK / XAPK</string>
+    <string name="apps_label">Installed Apps</string>
+    <string name="apps_loading">Loading\u2026</string>
+    <string name="apps_empty">No apps found</string>
+    <string name="hidden_suffix"> (Hidden)</string>
+    <string name="search_hint">Search apps\u2026</string>
+    <string name="filter_user">User</string>
+    <string name="filter_system">System</string>
+    <string name="filter_all">All</string>
+    <string name="status_no_privileges_action">No Privileges \u2014 click here</string>
+    <string name="setup_title">Become Device Owner</string>
+    <string name="setup_instructions">There must be no other device owner or accounts on the device.\n\nOn a computer with ADB:\n\nadb shell dpm set-device-owner com.example.deviceownerapp/.DeviceAdmin\n\nIf that fails, first uninstall any accounts and other device-admin apps, then try again.\n\nAlternative: install Dhizuku, grant it Device Owner via the same adb command for its package, then return here and press Connect Dhizuku.</string>
+
+    <string name="perm_install_missing">Install permission missing \u2014 click here</string>
+    <string name="perm_install_title">Allow Install</string>
+    <string name="perm_install_msg">Without Device Owner or Dhizuku, this app installs APKs through the system installer, which requires the \"Install unknown apps\" permission.\n\nTap OK to open settings and enable it for this app.</string>
+
+    <!-- Dhizuku toasts -->
     <string name="dhizuku_permission_granted">Dhizuku permission granted</string>
     <string name="dhizuku_permission_denied">Dhizuku permission denied</string>
     <string name="dhizuku_not_available">Dhizuku is not available</string>
+
+    <!-- App detail -->
+    <string name="detail_title">App Details</string>
+    <string name="hide_application">Hide application</string>
+    <string name="permissions_label">Runtime permissions</string>
+    <string name="no_permissions">No permissions requested</string>
+    <string name="hide_warning_title">Warning</string>
+    <string name="hide_warning_msg">Hiding this app will cause the applications menu to not show any user installed apps at all.</string>
+    <string name="btn_yes">Yes</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_ok">OK</string>
+
+    <!-- Progress -->
+    <string name="progress_title">Installing\u2026</string>
+    <string name="progress_default">Processing\u2026</string>
+    <string name="dialog_success_title">Success</string>
+    <string name="dialog_success_msg">Application installed successfully.</string>
+    <string name="dialog_error_title">Installation Error</string>
+
+    <!-- Info screen -->
+    <string name="info_title">About</string>
+    <string name="info_update_title">Update</string>
+    <string name="info_update_body">Check for a newer version on GitHub.</string>
+    <string name="btn_check_update">Check for update</string>
+    <string name="info_links_title">Links</string>
+    <string name="btn_github_profile">GitHub Profile</string>
+    <string name="btn_app_repo">App Repository</string>
+    <string name="btn_contact">Contact</string>
+
+    <string name="update_checking">Checking\u2026</string>
+    <string name="update_up_to_date">Already on the latest version (%s)</string>
+    <string name="update_downloading">Downloading v%s\u2026</string>
+    <string name="update_download_failed">Download failed: %s</string>
+    <string name="update_available_title">Update available</string>
+    <string name="update_available_msg">Version %s is available. Download and install now?</string>
+    <string name="btn_download">Download</string>
+    <string name="update_installing">Installing\u2026</string>
+    <string name="update_install_failed">Install failed: %s</string>
+    <string name="update_no_release">No release found</string>
+
+    <string name="info_theme_title">Theme</string>
+    <string name="theme_system">System Default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+
+    <string name="info_danger_title">Danger Zone</string>
+    <string name="btn_uninstall">Uninstall App / Remove Admin</string>
+    <string name="uninstall_clearing">Clearing Device Owner\u2026</string>
+    <string name="uninstall_removing_admin">Removing Active Admin\u2026</string>
 </resources>

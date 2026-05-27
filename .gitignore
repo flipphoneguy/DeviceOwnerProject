@@ -1,2 +1,7 @@
-/build/
-/lib/
+build/
+libs/
+old/
+tmp/
+debug.keystore
+*.idsig
+*.apk
