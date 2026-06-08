@@ -1,5 +1,11 @@
 # Device Owner App
 
+<div align="center">
+
+![Downloads](https://img.shields.io/github/downloads/flipphoneguy/DeviceOwnerProject/total)
+
+</div>
+
 A utility application designed for **Sonim XP5800** and **XP3800** devices (Android 8.1) to facilitate local app installation without a constant ADB connection.
 
 These devices restrict app installation, allowing only ADB or Device Owner/Admin based installs. This app acts as a Device Owner (or as a Dhizuku client) to bypass those restrictions and install APK and XAPK files directly on-device.
